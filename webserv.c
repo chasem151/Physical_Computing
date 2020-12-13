@@ -20,16 +20,67 @@
 #include <sched.h>
 #include <signal.h>
 
+#ifndef PORT
+#define PORT 8080
+#endif
+
+// see setsockopt(), getsockopt() to set or know the rx buffer's size
+
 static int const  ERR_NOTFOUND = 404;
 static int const  ERR_NOTIMPL = 501;
 
+void correct_remote_address(FILE *fp){ // see man for: recv()
+    char buf[BUFSIZ]; // max stream (MACRO-BUFSIZ-stdio.h)
+    while(fgets(buf,BUFSIZ,fp)!= NULL && strcmp(buf,"\r\n" !=0));
+}
+
+void wont_stat(char *ptr){ // HTML 404: "Not Found"
+    struct stat info;
+    return(stat(ptr,&info) == -1);
+}
+
+void dir_extension(char *ptr){
+    struct stat info;
+    return( stat(ptr,&info) != -1 && S_ISDIR(info.st_mode));
+}
+
+char *file_extension(char *ptr){ // to navigate through the .ext
+    char *character;
+    if((character = strrchr(ptr,'.')) != NULL) // test 1st occurence '.'
+        return character+1; // check the next char... recursive ? no clue lol
+    return "";
+}
+
+char *extension(char * request){ // returns .xxx
+    char *ext = strchr(request,'.');
+    return ext;
+}
+
+int approve_request(int socket_fd, char* request){
+    if(strlen(request) == 0){
+        request = ".";
+    }
+    if(access(request, F_OK) != -1){
+        return 1;
+    }
+    else{
+        struct stat info;
+        if(lstat(request,&info) < 0){
+            fprintf(stderr, "stat error for %s.\n", request);
+        }
+        if(S_ISDIR(info.st_mode) > 0) return 1;
+
+        //http_error(socket_fd) ?? -- idk
+    }
+}
+
 // Output error message depending on errorno and exit
-void http_error(int errorno, int client, char *ftype){
+void http_request_error(int errorno, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
     char *buf = malloc(512);
    
     switch(errorno){
     // Not Found
-    case 404:
+    case 404: // see wont_stat() ^^
         sprintf(buf, "HTTP/ 1.1  404 NOT FOUND\r\n");   
         write(client, buf, strlen(buf));
         if(strcmp(ftype, "html") || strcmp(ftype, "txt")) {
@@ -71,13 +122,13 @@ void http_error(int errorno, int client, char *ftype){
 }
 
 // Handle a request by the client
-int getRequest(void* c){
-    int client = *((int *)c);
+int getRequest(void* request, int fd){ // I added an fd argument
+    int client = *((int *)request);
     char buffer[1024];
     char filePath[256];
     char fileType[20];
     char output[4096];
-    FILE *file;
+    FILE *file, *fp_sd, *new_file
     int i;
     int re = read(client, buffer, 1024);
     
@@ -95,7 +146,7 @@ int getRequest(void* c){
                 exit(1);
     }
     
-    // if requesting a directory
+    // if requesting a directory -- use dir_extension() ^^
     if(strncmp(buffer, "GET / ", 6) == 0 || strncmp(buffer,"get / ", 6) == 0){
         strcpy(buffer, "GET /. ");
     }
@@ -154,7 +205,7 @@ int getRequest(void* c){
     
     // Handle the request based on the extension of the file
 
-    if(strcmp(fileType, ".cgi") == 0){
+    if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
         int pipe1[2];
         pipe(pipe1);
         // Create new process to run CGI and get results through a pipe
@@ -168,7 +219,7 @@ int getRequest(void* c){
 
             execl(filePath, filePath, NULL);
             exit(0);
-        }else{
+        }else{ // for our .py scripts...
             close(pipe1[1]);
             waitpid(pid, NULL, 0);
 
@@ -253,6 +304,22 @@ int getRequest(void* c){
 }
 
 int main(int argc, char*argv[]){
+
+    void correct_remote_address(FILE *fp);
+
+    int port_number;
+    if(argc > 1){
+        port_number = strtoimax(argv[1],NULL,10);
+
+        if(port_number < 5000 || port_number > 65536){
+            fprintf(stderr,"Port number must be between 5000-65536\n");
+            return -1;
+        }
+    }
+    else{ // outside boundaries
+        fprintf(stderr,"Must insert port number b");
+        return -1;
+    }
 
     http_error(404, 12, "gif");
     http_error(404, 30, "txt");
