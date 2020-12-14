@@ -182,7 +182,7 @@ void http_error(int errorno, int client, char *ftype){ // could be: int socket_f
 }
 
 // Handle a request by the client
-int getRequest(void* request, int fd){ // fd == socket_fd
+int getRequest(void* request){ 
     int client = *((int *)request);
     char buffer[1024];
     char filePath[256];
