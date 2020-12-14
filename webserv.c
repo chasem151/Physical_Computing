@@ -74,6 +74,9 @@ int approve_request(int socket_fd, char* request){
     }
 }
 
+// pipe_file -- sending cgi-gnuplot
+// 
+
 // Output error message depending on errorno and exit
 void http_request_error(int errorno, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
     char *buf = malloc(512);
@@ -122,7 +125,7 @@ void http_request_error(int errorno, int client, char *ftype){ // could be: int 
 }
 
 // Handle a request by the client
-int getRequest(void* request, int fd){ // I added an fd argument
+int getRequest(void* request, int fd){ // fd == socket_fd
     int client = *((int *)request);
     char buffer[1024];
     char filePath[256];
@@ -202,12 +205,15 @@ int getRequest(void* request, int fd){ // I added an fd argument
         i++;
         j++;
     } */
+
+    //work on figuring out gnuplot
     
     // Handle the request based on the extension of the file
 
     if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
-        int pipe1[2];
+        int pipe1[2]; //add signal handlers
         pipe(pipe1);
+        //fflush(pipe1)
         // Create new process to run CGI and get results through a pipe
         int pid = fork();
         if(pid == 0){
@@ -269,7 +275,7 @@ int getRequest(void* request, int fd){ // I added an fd argument
         // Write content type to client
         write(client, output, strlen(output));
 
-        //Write the conents of the file to client
+        //Write the contents of the file to client
         fgets(output, sizeof(output), file);
         while(!feof(file)){
             send(client, output, strlen(output), 0);
@@ -305,25 +311,63 @@ int getRequest(void* request, int fd){ // I added an fd argument
 
 int main(int argc, char*argv[]){
 
+    struct socketaddress host, client;
+    int socket_fd, new_sock_fd;
+    int socket_options = 1;
+    struct sockaddr_in serverAdd;
+    char request[BUFSIZ];
+    if(socket_fd = socket(AF_INET, SOCK_STREAM, 0) < 0){
+        fprintf("socket instantiation error\n");
+        exit(-1);
+    }
+    if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &socket_options, sizeof(socket_options)) < 0){
+        fprintf("SO_REUSEADDR failed\n");
+        exit(-1);
+    }
+    memset(&host,0,sizeof(host));
+
+    serverAdd.sin_family = AF_INET; // IPv4
+    serverAdd.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAdd.sin_port = htons(PORT);
+
+    if(bind(socket_fd, (struct sockaddr *) &serverAdd, sizeof(serverAdd)) == -1) {
+        fprintf("socket binding error\n");
+        exit(-1);
+    }
+
     void correct_remote_address(FILE *fp);
 
     int port_number;
     if(argc > 1){
         port_number = strtoimax(argv[1],NULL,10);
-
         if(port_number < 5000 || port_number > 65536){
             fprintf(stderr,"Port number must be between 5000-65536\n");
             return -1;
         }
     }
-    else{ // outside boundaries
-        fprintf(stderr,"Must insert port number b");
-        return -1;
+
+    if(listen(socket_fd, 100) < 0) {
+        fprintf("Listen not working\n");
+        exit(-1);
     }
 
-    http_error(404, 12, "gif");
+    //bind(&host,...)
+    fprintf("I am now...coming at you live!");
+    while(1){
+        if((new_sock_fd = accept(socket_fd, (struct socketaddress *) &client, sizeof(host)) < 0){
+            printf("Server experienced an accept() error");
+            continue;
+        }
+        fgets(request,BUFSIZ, fd);
+        //correct_remote_address(fd);
+        getRequest(((void *)&new_sock_fd));
+        close(new_sock_fd);
+        exit(0);
+    }
+
+    /* http_error(404, 12, "gif");
     http_error(404, 30, "txt");
-    http_error(404, 20, "html");
+    http_error(404, 20, "html"); */
 
     return 1;
 }
