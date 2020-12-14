@@ -1,28 +1,33 @@
+// std streams
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/sendfile.h>
 #include <stdlib.h>
+// unix specs
 #include <unistd.h>
 #include <errno.h>
-#include <string.h>
-#include <sys/types.h>
-#include <sys/socket.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
-#include <netinet/in.h>
-#include <fcntl.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include <errno.h>
+// processing
 #include <dirent.h>
 #include <sched.h>
 #include <signal.h>
+//networking / IPC
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/sendfile.h>
+#include <arpa/inet.h>
 
+/*
 #ifndef PORT
 #define PORT 8080
 #endif
+*/ 
+//instead- INADDR_ANY dynamically to support this server's mobility
 
 // see setsockopt(), getsockopt() to set or know the rx buffer's size
 
@@ -74,11 +79,63 @@ int approve_request(int socket_fd, char* request){
     }
 }
 
-// pipe_file -- sending cgi-gnuplot
-// 
+void serve(int portnum){
+	int listen_fd, client_fd;
+	struct sockaddr_in host_addr;
+	struct sockaddr_in client_addr;
+
+	int approved = 1;
+	int client_size;
+
+	if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		perror("Server-socket error");
+		exit(-1);
+	}
+
+	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &approved, sizeof(int)) == -1){
+		perror("Server-setsockopt error");
+		exit(-1);
+	}
+
+	host_addr.sin_family = AF_INET; // any avail port
+	host_addr.sin_port = htons(portnum); // network bytes
+	host_addr.sin_addr.s_addr = htonl(INADDR_ANY); // fill w/host's IP
+
+	printf("Server-Using %s and port %d.\n", inet_ntoa(host_addr.sin_addr), portnum);
+	memset(&(host_addr.sin_zero), '\0', 8); // default constructor https://stackoverflow.com/questions/24666186/why-memset-sockaddr-in-to-0
+
+	if(bind(listen_fd, (struct sockaddr *)&host_addr, sizeof(host_addr)) < -1){
+		perror("Server-bind error");
+		exit(-1);
+	}
+
+    // 2 for testing purposes...break it!
+	if(listen(listen_fd, 2) == -1){
+		perror("Server-listen error");
+		exit(-1);
+	}
+
+	char http_buf[200];
+	while(1){
+		client_size = sizeof(client_addr);
+		if((client_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_size)) == -1){
+			perror("Server-accept() error");
+			continue;
+		}
+		if(fork() == 0){
+			close(listen_fd); // child doesn't need
+            correct_remote_address(client_fd); // recv() another client http GET buf
+			getRequest(client_fd, http_buf); // right here guys?? idk
+			close(client_fd);
+			exit(0);
+		}
+		close(client_fd); // parent doesn't need
+	}
+}
+// pipe/send file is done with histogram.cgi
 
 // Output error message depending on errorno and exit
-void http_request_error(int errorno, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
+void http_error(int errorno, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
     char *buf = malloc(512);
    
     switch(errorno){
@@ -131,9 +188,10 @@ int getRequest(void* request, int fd){ // fd == socket_fd
     char filePath[256];
     char fileType[20];
     char output[4096];
-    FILE *file, *fp_sd, *new_file
-    int i;
-    int re = read(client, buffer, 1024);
+    int re;
+    
+    FILE *file, *fp_sd, *new_file;
+    re = read(client, buffer, 1024);
     
     if( re <= 0){
         fprintf(stderr, "Could not read from browser.\n");
@@ -155,7 +213,7 @@ int getRequest(void* request, int fd){ // fd == socket_fd
     }
 
     // i: buffer position
-    i = 5;
+    int i = 5;
 
     // j: filePath position
     int j = 0;
@@ -311,63 +369,32 @@ int getRequest(void* request, int fd){ // fd == socket_fd
 
 int main(int argc, char*argv[]){
 
-    struct socketaddress host, client;
-    int socket_fd, new_sock_fd;
-    int socket_options = 1;
-    struct sockaddr_in serverAdd;
-    char request[BUFSIZ];
-    if(socket_fd = socket(AF_INET, SOCK_STREAM, 0) < 0){
-        fprintf("socket instantiation error\n");
+    //void correct_remote_address(FILE *fp);
+     /*
+    // only two for testing purposes... break it!
+    if( listen(sock_fd, 2) < 0 ){
+        perror("Overflow of open listeners...\n");
         exit(-1);
-    }
-    if(setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (char *) &socket_options, sizeof(socket_options)) < 0){
-        fprintf("SO_REUSEADDR failed\n");
-        exit(-1);
-    }
-    memset(&host,0,sizeof(host));
+    } */
+    int port_num;
 
-    serverAdd.sin_family = AF_INET; // IPv4
-    serverAdd.sin_addr.s_addr = htonl(INADDR_ANY);
-    serverAdd.sin_port = htons(PORT);
+	if (argc > 1){
+		port_num = strtoimax(argv[1], NULL, 10);
+		if(port_num < 5000 || port_num > 65536){
+			fprintf(stderr, "Port number must fall between 5000-65536\n");
+			return -1;
+		}
+	}
+	else{
+		fprintf(stderr, "The port number must fall between 5000-65536\n");
+		return -1;
+	}
 
-    if(bind(socket_fd, (struct sockaddr *) &serverAdd, sizeof(serverAdd)) == -1) {
-        fprintf("socket binding error\n");
-        exit(-1);
-    }
-
-    void correct_remote_address(FILE *fp);
-
-    int port_number;
-    if(argc > 1){
-        port_number = strtoimax(argv[1],NULL,10);
-        if(port_number < 5000 || port_number > 65536){
-            fprintf(stderr,"Port number must be between 5000-65536\n");
-            return -1;
-        }
-    }
-
-    if(listen(socket_fd, 100) < 0) {
-        fprintf("Listen not working\n");
-        exit(-1);
-    }
-
-    //bind(&host,...)
-    fprintf("I am now...coming at you live!");
-    while(1){
-        if((new_sock_fd = accept(socket_fd, (struct socketaddress *) &client, sizeof(host)) < 0){
-            printf("Server experienced an accept() error");
-            continue;
-        }
-        fgets(request,BUFSIZ, fd);
-        //correct_remote_address(fd);
-        getRequest(((void *)&new_sock_fd));
-        close(new_sock_fd);
-        exit(0);
-    }
+	serve(port_num);
 
     /* http_error(404, 12, "gif");
     http_error(404, 30, "txt");
     http_error(404, 20, "html"); */
 
-    return 1;
+    return 0; 
 }
