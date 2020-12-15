@@ -349,7 +349,7 @@ int getRequest(void* request){ // , int socket_fd
 
 
        DIR *folder;
-        struct dirent *dent;
+        struct dirent *de;
         // if dir exists
         if((folder = opendir(filePath)) != NULL){
             // Write content type to client
@@ -357,7 +357,7 @@ int getRequest(void* request){ // , int socket_fd
             write(client, output, strlen(output));
             // Write the file/folder names to client
             while((dent = readdir(folder)) != NULL){
-                sprintf(output, dent->d_name);
+                sprintf(output, de->d_name);
                 // Ignore current and parent directory links
                 if(strcmp(output, ".") != 0 && strcmp(output, "..") != 0){
                     write(client, output, strlen(output));
