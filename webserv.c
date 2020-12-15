@@ -67,12 +67,12 @@ void correct_remote_address(FILE *fp){ // see man for: recv()
     while(fgets(buf,BUFSIZ,fp)!= NULL && strcmp(buf,"\r\n" !=0));
 }
 
-void wont_stat(char *ptr){ // HTML 404: "Not Found"
+int wont_stat(char *ptr){ // HTML 404: "Not Found"
     struct stat info;
     return(stat(ptr,&info) == -1);
 }
 
-void dir_extension(char *ptr){
+int dir_extension(char *ptr){
     struct stat info;
     return( stat(ptr,&info) != -1 && S_ISDIR(info.st_mode));
 }
@@ -85,8 +85,11 @@ char *file_extension(char *ptr){ // to navigate through the .ext
 }
 
 char *extension(char * request){ // returns .xxx
-    char *ext = strchr(request,'.');
-    return ext;
+    if(strchr(request, '.')){
+        char *ext = strchr(request,'.');
+        return ext;
+    }
+    return request;
 }
 
 int approve_request(int socket_fd, char* request){
@@ -159,10 +162,11 @@ int getRequest(void* request){ // , int socket_fd
     int client = *((int *)request);
     char buffer[1024];
     char filePath[256];
-    char fileType[20];
+    //char fileType[20];
     char output[4096];
     int re;
-    
+    char ptr[1024];
+
     FILE *file, *fp_sd, *new_file;
     re = read(client, buffer, 1024);
     
@@ -179,13 +183,21 @@ int getRequest(void* request){ // , int socket_fd
         http_error(501, client, "none");
                 exit(1);
     }
-    
+
+
+
     // if requesting a directory -- use dir_extension() ^^
     if(strncmp(buffer, "GET / ", 6) == 0 || strncmp(buffer,"get / ", 6) == 0){
         strcpy(buffer, "GET /. ");
     }
 
-    // i: buffer position
+    
+
+    //*buffer = dir_extension(buffer);
+
+
+    // i: buffer position       Get /j/batman
+                    //          Get /.j/batman 
     int i = 5;
 
     // j: filePath position
@@ -199,7 +211,11 @@ int getRequest(void* request){ // , int socket_fd
     }
     filePath[j] = 0;
 
-    // Get file extension
+
+    char *fileType = extension(filePath);
+    //printf("\nftype: %s\n", fType);
+
+    /* // Get file extension
     j = strlen(filePath) - 1;
     i = 0;
     // Navigate back to character just before file extension
@@ -212,6 +228,8 @@ int getRequest(void* request){ // , int socket_fd
         i++;
         j++;
     }
+
+    printf("\nfiletype: %s\n", fileType); */
 
     // Check if file exists
     if((file = fopen(filePath, "r")) == NULL){
@@ -244,7 +262,7 @@ int getRequest(void* request){ // , int socket_fd
     if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
         int pipe1[2]; //add signal handlers
         pipe(pipe1);
-        //fflush(pipe1)
+        //fflush(stdout);
         // Create new process to run CGI and get results through a pipe
         int pid = fork();
         if(pid == 0){
@@ -254,9 +272,9 @@ int getRequest(void* request){ // , int socket_fd
             int param = strtol("0755", 0, 8);
             chmod(filePath, param);
 
-            execl(filePath, filePath, NULL);
+            execl(filePath, filePath, NULL); 
             exit(0);
-        }else{ // for our .py scripts...
+        }else{ // figure out how to handle python scripts
             close(pipe1[1]);
             waitpid(pid, NULL, 0);
 
@@ -313,7 +331,24 @@ int getRequest(void* request){ // , int socket_fd
             fgets(output, sizeof(output), file);
         }
     }else{ // directory listing request
-        DIR *folder;
+    
+       /* strcpy(ptr,buffer);
+        strcpy(ptr, "./");
+        if( wont_stat(ptr) ){
+
+            dir_extension(ptr);
+            sprintf(output, "Content-Type: text/plain\r\n\r\nDirectory Listing: \n\n");
+            write(client, output, strlen(output));
+            
+            FILE *fd = open(fd , "w");
+            dup2(fd , 1);
+            dup2(fd , 2);
+            sprintf(output,"ls","ls","-l",ptr,NULL);
+            write(client, output, strlen(output));
+        }  */
+
+
+       DIR *folder;
         struct dirent *dent;
         // if dir exists
         if((folder = opendir(filePath)) != NULL){
@@ -329,8 +364,10 @@ int getRequest(void* request){ // , int socket_fd
                     write(client, "\n", 1);
                 }
             }
-            closedir(folder);
-        }else{
+            closedir(folder); 
+            
+        }
+        else{
             http_error(404, client, fileType);
         }
     }
@@ -340,7 +377,7 @@ int getRequest(void* request){ // , int socket_fd
     return 0;
 }
 
-void serve(int portnum){
+/* void serve(int portnum){
 	int listen_fd, client_fd;
 	struct sockaddr_in host_addr;
 	struct sockaddr_in client_addr;
@@ -393,13 +430,28 @@ void serve(int portnum){
 		close(client_fd); // parent doesn't need
 	}
 }
-// pipe/send file is done with histogram.cgi
+// pipe/send file is done with histogram.cgi */
 
 
 int main(int argc, char*argv[]){
     int sockFd, clientFd;
     struct sockaddr_in clientAddr;
     int usesThreads = 0;
+
+    /* char *s = extension("my-histogram.cgi");
+    printf("\n %s \n", s); */
+
+    /* char *b = "GET /mnt/c/Users/kshin/Documents/GitHub/Physical-Computing";
+
+    dir_extension(b);
+
+    printf("\n%s\n", b);
+
+    if(strncmp(b, "GET / ", 6) == 0 || strncmp(b,"get / ", 6) == 0){
+        strcpy(b, "GET /. ");
+    }
+
+    printf("\n%s\n", b); */
     
     // Error check arguments
 
