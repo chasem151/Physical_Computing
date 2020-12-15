@@ -1,5 +1,4 @@
 #!/usr/bin/perl
-# ARGV[0] = filename, ARGV[1] = pattern1, ARGV[2] = pattern2		.
 
 # Run gnuplot and read input from filehandler
 open my $PROGRAM, '|-', 'gnuplot'
@@ -7,11 +6,15 @@ open my $PROGRAM, '|-', 'gnuplot'
 
 # Print cmds into gnuplot input
 say {$PROGRAM} "set terminal jpeg";
-say {$PROGRAM} "set output 'histo_g_ftypes.jpeg'";
-say {$PROGRAM} "set title \"Frequency per file type in $ARGV[0]\"";
-say {$PROGRAM} "set boxwidth 0.75";
+say {$PROGRAM} "set output 'histogram.jpg";
+say {$PROGRAM} "set autoscale y";
+say {$PROGRAM} "set bar 1.0 front";
 say {$PROGRAM} "set style fill solid";
-say {$PROGRAM} "plot '-' using 2:xtic(1) with boxes";
+say {$PROGRAM} "set boxwidth 0.75";
+say {$PROGRAM} "set style histogram gap 1.0";
+say {$PROGRAM} "set style data histograms";
+say {$PROGRAM} "set title \"Frequency per file type in $ARGV[0]\"";
+say {$PROGRAM} "plot '-' using 2:xtic(1)";
 
 # Run my-histogram w/local...made(by make) executable
 open my $read_from_process, "-|", "./my-histogram", @ARGV;
