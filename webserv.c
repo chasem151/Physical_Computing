@@ -164,6 +164,7 @@ int getRequest(void* request){ // , int socket_fd
     char buffer[1024];
     char filePath[256];
     //char fileType[20];
+    char input[256];
     char output[4096];
     int re;
     char ptr[1024];
@@ -212,6 +213,19 @@ int getRequest(void* request){ // , int socket_fd
     }
     filePath[j] = 0;
 
+    //char *inputs;
+    //printf("fpath before %s\n", filePath);
+    //*filePath = strtok(filePath, "?");
+    if(strchr(filePath, '?')){
+        printf("here");
+        char *fPath = strtok(filePath, "?");
+        strcpy(filePath, fPath);
+        fPath = strtok(NULL, "?");
+        strcpy(input, fPath);
+        //printf("\nfpath: %s\n", fPath);
+    }
+    //printf("\nfpath: %s\n", input);
+    //printf("fpath after %s\n", filePath);
 
     char *fileType = extension(filePath);
     //printf("\nftype: %s\n", fType);
@@ -232,12 +246,24 @@ int getRequest(void* request){ // , int socket_fd
 
     //printf("\nfiletype: %s\n", fileType);  */
 
+    /*
+    hello.txt
+    .txt
+    test.cgi?i=1&i=2
+    test.cgi
+    */
+
+    
+
     // Check if file exists
+    //printf("Requested file is %s\n", filePath);
+
     if((file = fopen(filePath, "r")) == NULL){
         http_error(404, client, fileType);
         exit(1);
     }
 
+    
     // Output success message
     sprintf(output, "HTTP/ 1.1 200 OK\r\n");
     write(client, output, strlen(output));
@@ -259,9 +285,7 @@ int getRequest(void* request){ // , int socket_fd
     //work on figuring out gnuplot
     
     // Handle the request based on the extension of the file
-
-    if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
-        // to handle cgi input args
+    // to handle cgi input args
         int flag_args = 0;
         char cgi_args_raw[1024];
         char *token;
@@ -274,7 +298,21 @@ int getRequest(void* request){ // , int socket_fd
         }
         char cmd[400];
         char readbuf[80];
-        sprintf(cmd, "chmod 755 %s && %s", request, request);
+    if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
+            /*
+        int pipe1[2]; //add signal handlers
+        pipe(pipe1);
+        //fflush(stdout);
+        */
+        // Create new process to run CGI and get results through a pipe
+        int pid = fork();
+        if(pid == 0){
+            //dup2(pipe1[1], 1);
+            //close(pipe1[0]);
+            // Set proper permissions
+        //int parameter = strtol("0755", 0, 8);
+          //  chmod(filePath, parameter);
+        //sprintf(cmd, "chmod 755 %s && %s", request, request);
         if (flag_args == 1) {
             char tempbuf[80];
             char *token1;
@@ -293,8 +331,8 @@ int getRequest(void* request){ // , int socket_fd
                 perror("popen error: ");
                 exit(1);
             }
-            sprintf(output, "HTTP/ 1.1 200 OK\r\n");
-            write(client, output, strlen(output));
+            //sprintf(output, "HTTP/ 1.1 200 OK\r\n");
+            //write(client, output, strlen(output));
 
             while(fgets(readbuf, 80, pipe)) {
                 write(client, readbuf, strlen(readbuf));
@@ -305,35 +343,26 @@ int getRequest(void* request){ // , int socket_fd
                 perror("pclose error: ");
                 exit(1);
             }
-    
-            /*
-        int pipe1[2]; //add signal handlers
-        pipe(pipe1);
-        //fflush(stdout);
-        // Create new process to run CGI and get results through a pipe
-        int pid = fork();
-        if(pid == 0){
-            dup2(pipe1[1], 1);
-            close(pipe1[0]);
-            // Set proper permissions
             int param = strtol("0755", 0, 8);
             chmod(filePath, param);
 
             execl(filePath, filePath, NULL); 
             exit(0);
+        
         }else{ // figure out how to handle python scripts
-            close(pipe1[1]);
+            //close(pipe1[1]);
+            pclose(pipe);
             waitpid(pid, NULL, 0);
 
             //Write result to client    
             char buf;
-            while(read (pipe1[0],&buf, sizeof(buf)) > 0){
+            while(read (pipe,&buf, sizeof(buf)) > 0){
                 write(client, &buf, 1);
             }
 
-            close(pipe1[0]);
+            //close(pipe1[0]);
         }
-        */
+        
     }else if(strcmp(fileType, ".jpg") == 0 || strcmp(fileType, ".jpeg") == 0 || strcmp(fileType, ".gif") == 0){
         // Figure out content type
         if(strcmp(fileType, ".gif") == 0)

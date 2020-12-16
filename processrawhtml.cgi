@@ -4,8 +4,10 @@
 
 # Script: Counts 10 numbers from a specified starting numbers and displays the
 # 		  the values in a specified font-size
+# if the input is /processrawhtml.cgi/?var1=4&var2=50&var3=20 
+# -- count var3 times from var2 outputting in HTML size var1
 
-# ARGV[0] = html text size (1-7)
+# ARGV[0] = html text size (1-7) 
 # ARGV[1] = starting index
 # ARGV[2] = max num of values
 
