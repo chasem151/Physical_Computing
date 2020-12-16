@@ -34,7 +34,7 @@
 //static int const  ERR_NOTFOUND = 404;
 //static int const  ERR_NOTIMPL = 501;
 
-int create_bind(char *num){
+int server(char *num){
     int portNum, sockNum;
     struct sockaddr_in serverAddr;
 
@@ -110,10 +110,10 @@ int approve_request(int socket_fd, char* request){
 }
 
 // Output error message depending on errorno and exit
-void http_error(int errorno, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
+void http_error(int errornum, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
     char *buf = malloc(512);
    
-    switch(errorno){
+    switch(errornum){
     // Not Found
     case 404: // see wont_stat() ^^
         sprintf(buf, "HTTP/ 1.1  404 NOT FOUND\r\n");   
@@ -484,7 +484,7 @@ int main(int argc, char*argv[]){
         exit(1);
     }
     
-    sockFd = create_bind(argv[1]);
+    sockFd = server(argv[1]);
     usesThreads = atoi(argv[2]);
 
     // Start listening for connections, 100 is maximum number of connections

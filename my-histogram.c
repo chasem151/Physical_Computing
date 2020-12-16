@@ -7,7 +7,7 @@ int main (int argc, char *argv[]){
 	char *fp = argv[1];
 	char cmd[400];
 	char rd_buf[80];
-	char wr_buf[80];
+	char wr_buf[85];
 
 	// For each pattern, run 'grep -e' on the file
 	for ( int i = 2; i < argc; i++) {
