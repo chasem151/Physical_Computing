@@ -1,8 +1,8 @@
+#define _GNU_SOURCE
 // std streams
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdlib.h>
 // unix specs
 #include <unistd.h>
 #include <errno.h>
@@ -34,17 +34,44 @@
 static int const  ERR_NOTFOUND = 404;
 static int const  ERR_NOTIMPL = 501;
 
+int create_bind(char *num){
+    int portNum, sockNum;
+    struct sockaddr_in serverAddr;
+
+    portNum = atoi(num);
+
+    // Open new socket
+    if((sockNum = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+        fprintf(stderr, "Error: Could not open socket.\n");
+        exit(1);
+    }
+
+    // Set up socket address
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    serverAddr.sin_port = htons(portNum);
+    
+    int size = sizeof(serverAddr);
+    
+    // Bind socket (socketNum) to address serverAddr
+    if(bind(sockNum, (struct sockaddr *) &serverAddr, size) == -1){
+        perror("Error: if.\n");
+        exit(1);
+    }
+    return sockNum;
+}
+
 void correct_remote_address(FILE *fp){ // see man for: recv()
     char buf[BUFSIZ]; // max stream (MACRO-BUFSIZ-stdio.h)
     while(fgets(buf,BUFSIZ,fp)!= NULL && strcmp(buf,"\r\n" !=0));
 }
 
-void wont_stat(char *ptr){ // HTML 404: "Not Found"
+int wont_stat(char *ptr){ // HTML 404: "Not Found"
     struct stat info;
     return(stat(ptr,&info) == -1);
 }
 
-void dir_extension(char *ptr){
+int dir_extension(char *ptr){
     struct stat info;
     return( stat(ptr,&info) != -1 && S_ISDIR(info.st_mode));
 }
@@ -57,8 +84,11 @@ char *file_extension(char *ptr){ // to navigate through the .ext
 }
 
 char *extension(char * request){ // returns .xxx
-    char *ext = strchr(request,'.');
-    return ext;
+    if(strchr(request, '.')){
+        char *ext = strchr(request,'.');
+        return ext;
+    }
+    return request;
 }
 
 int approve_request(int socket_fd, char* request){
@@ -78,61 +108,6 @@ int approve_request(int socket_fd, char* request){
         //http_error(socket_fd) ?? -- idk
     }
 }
-
-void serve(int portnum){
-	int listen_fd, client_fd;
-	struct sockaddr_in host_addr;
-	struct sockaddr_in client_addr;
-
-	int approved = 1;
-	int client_size;
-
-	if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
-		perror("Server-socket error");
-		exit(-1);
-	}
-
-	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &approved, sizeof(int)) == -1){
-		perror("Server-setsockopt error");
-		exit(-1);
-	}
-
-	host_addr.sin_family = AF_INET; // any avail port
-	host_addr.sin_port = htons(portnum); // network bytes
-	host_addr.sin_addr.s_addr = htonl(INADDR_ANY); // fill w/host's IP
-
-	printf("Server-Using %s and port %d.\n", inet_ntoa(host_addr.sin_addr), portnum);
-	memset(&(host_addr.sin_zero), '\0', 8); // default constructor https://stackoverflow.com/questions/24666186/why-memset-sockaddr-in-to-0
-
-	if(bind(listen_fd, (struct sockaddr *)&host_addr, sizeof(host_addr)) < -1){
-		perror("Server-bind error");
-		exit(-1);
-	}
-
-    // 2 for testing purposes...break it!
-	if(listen(listen_fd, 2) == -1){
-		perror("Server-listen error");
-		exit(-1);
-	}
-
-	char http_buf[200];
-	while(1){
-		client_size = sizeof(client_addr);
-		if((client_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_size)) == -1){
-			perror("Server-accept() error");
-			continue;
-		}
-		if(fork() == 0){
-			close(listen_fd); // child doesn't need
-            correct_remote_address(client_fd); // recv() another client http GET buf
-			getRequest(client_fd, http_buf); // right here guys?? idk
-			close(client_fd);
-			exit(0);
-		}
-		close(client_fd); // parent doesn't need
-	}
-}
-// pipe/send file is done with histogram.cgi
 
 // Output error message depending on errorno and exit
 void http_error(int errorno, int client, char *ftype){ // could be: int socket_fd as only input args -- write calls should be write(socket_fd, ...)
@@ -182,14 +157,15 @@ void http_error(int errorno, int client, char *ftype){ // could be: int socket_f
 }
 
 // Handle a request by the client
-int getRequest(void* request){ 
+int getRequest(void* request){ // , int socket_fd
     int client = *((int *)request);
     char buffer[1024];
     char filePath[256];
-    char fileType[20];
+    //char fileType[20];
     char output[4096];
     int re;
-    
+    char ptr[1024];
+
     FILE *file, *fp_sd, *new_file;
     re = read(client, buffer, 1024);
     
@@ -206,13 +182,21 @@ int getRequest(void* request){
         http_error(501, client, "none");
                 exit(1);
     }
-    
+
+
+
     // if requesting a directory -- use dir_extension() ^^
     if(strncmp(buffer, "GET / ", 6) == 0 || strncmp(buffer,"get / ", 6) == 0){
         strcpy(buffer, "GET /. ");
     }
 
-    // i: buffer position
+    
+
+    //*buffer = dir_extension(buffer);
+
+
+    // i: buffer position       Get /j/batman
+                    //          Get /.j/batman 
     int i = 5;
 
     // j: filePath position
@@ -226,7 +210,11 @@ int getRequest(void* request){
     }
     filePath[j] = 0;
 
-    // Get file extension
+
+    char *fileType = extension(filePath);
+    //printf("\nftype: %s\n", fType);
+
+    /* // Get file extension
     j = strlen(filePath) - 1;
     i = 0;
     // Navigate back to character just before file extension
@@ -239,6 +227,8 @@ int getRequest(void* request){
         i++;
         j++;
     }
+
+    printf("\nfiletype: %s\n", fileType); */
 
     // Check if file exists
     if((file = fopen(filePath, "r")) == NULL){
@@ -271,7 +261,7 @@ int getRequest(void* request){
     if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
         int pipe1[2]; //add signal handlers
         pipe(pipe1);
-        //fflush(pipe1)
+        //fflush(stdout);
         // Create new process to run CGI and get results through a pipe
         int pid = fork();
         if(pid == 0){
@@ -281,9 +271,9 @@ int getRequest(void* request){
             int param = strtol("0755", 0, 8);
             chmod(filePath, param);
 
-            execl(filePath, filePath, NULL);
+            execl(filePath, filePath, NULL); 
             exit(0);
-        }else{ // for our .py scripts...
+        }else{ // figure out how to handle python scripts
             close(pipe1[1]);
             waitpid(pid, NULL, 0);
 
@@ -340,24 +330,43 @@ int getRequest(void* request){
             fgets(output, sizeof(output), file);
         }
     }else{ // directory listing request
-        DIR *folder;
-        struct dirent *dent;
+    
+       /* strcpy(ptr,buffer);
+        strcpy(ptr, "./");
+        if( wont_stat(ptr) ){
+
+            dir_extension(ptr);
+            sprintf(output, "Content-Type: text/plain\r\n\r\nDirectory Listing: \n\n");
+            write(client, output, strlen(output));
+            
+            FILE *fd = open(fd , "w");
+            dup2(fd , 1);
+            dup2(fd , 2);
+            sprintf(output,"ls","ls","-l",ptr,NULL);
+            write(client, output, strlen(output));
+        }  */
+
+
+       DIR *folder;
+        struct dirent *de;
         // if dir exists
         if((folder = opendir(filePath)) != NULL){
             // Write content type to client
             sprintf(output, "Content-Type: text/plain\r\n\r\nDirectory Listing: \n\n");
             write(client, output, strlen(output));
             // Write the file/folder names to client
-            while((dent = readdir(folder)) != NULL){
-                sprintf(output, dent->d_name);
+            while((de = readdir(folder)) != NULL){
+                sprintf(output, de->d_name);
                 // Ignore current and parent directory links
                 if(strcmp(output, ".") != 0 && strcmp(output, "..") != 0){
                     write(client, output, strlen(output));
                     write(client, "\n", 1);
                 }
             }
-            closedir(folder);
-        }else{
+            closedir(folder); 
+            
+        }
+        else{
             http_error(404, client, fileType);
         }
     }
@@ -367,34 +376,119 @@ int getRequest(void* request){
     return 0;
 }
 
-int main(int argc, char*argv[]){
+/* void serve(int portnum){
+	int listen_fd, client_fd;
+	struct sockaddr_in host_addr;
+	struct sockaddr_in client_addr;
 
-    //void correct_remote_address(FILE *fp);
-     /*
-    // only two for testing purposes... break it!
-    if( listen(sock_fd, 2) < 0 ){
-        perror("Overflow of open listeners...\n");
-        exit(-1);
-    } */
-    int port_num;
+	int approved = 1;
+	int client_size;
 
-	if (argc > 1){
-		port_num = strtoimax(argv[1], NULL, 10);
-		if(port_num < 5000 || port_num > 65536){
-			fprintf(stderr, "Port number must fall between 5000-65536\n");
-			return -1;
+	if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
+		perror("Server-socket error");
+		exit(-1);
+	}
+
+	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &approved, sizeof(int)) == -1){
+		perror("Server-setsockopt error");
+		exit(-1);
+	}
+
+	host_addr.sin_family = AF_INET; // any avail port
+	host_addr.sin_port = htons(portnum); // network bytes
+	host_addr.sin_addr.s_addr = htonl(INADDR_ANY); // fill w/host's IP
+
+	printf("Server-Using %s and port %d.\n", inet_ntoa(host_addr.sin_addr), portnum);
+	memset(&(host_addr.sin_zero), '\0', 8); // default constructor https://stackoverflow.com/questions/24666186/why-memset-sockaddr-in-to-0
+
+	if(bind(listen_fd, (struct sockaddr *)&host_addr, sizeof(host_addr)) < -1){
+		perror("Server-bind error");
+		exit(-1);
+	}
+
+    // 2 for testing purposes...break it!
+	if(listen(listen_fd, 2) == -1){
+		perror("Server-listen error");
+		exit(-1);
+	}
+
+	char http_buf[200]; // request
+	while(1){
+		client_size = sizeof(client_addr);
+		if((client_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_size)) == -1){
+			perror("Server-accept() error");
+			continue;
 		}
+		if(fork() == 0){
+			close(listen_fd); // child doesn't need
+            //correct_remote_address(client_fd); // recv() another client http GET buf
+			getRequest((void *)&client_fd); // right here guys?? idk
+			close(client_fd);
+			exit(0);
+		}
+		close(client_fd); // parent doesn't need
 	}
-	else{
-		fprintf(stderr, "The port number must fall between 5000-65536\n");
-		return -1;
-	}
+}
+// pipe/send file is done with histogram.cgi */
 
-	serve(port_num);
 
-    /* http_error(404, 12, "gif");
-    http_error(404, 30, "txt");
-    http_error(404, 20, "html"); */
+int main(int argc, char*argv[]){
+    int sockFd, clientFd;
+    struct sockaddr_in clientAddr;
+    int usesThreads = 0;
 
-    return 0; 
+    /* char *s = extension("my-histogram.cgi");
+    printf("\n %s \n", s); */
+
+    /* char *b = "GET /mnt/c/Users/kshin/Documents/GitHub/Physical-Computing";
+
+    dir_extension(b);
+
+    printf("\n%s\n", b);
+
+    if(strncmp(b, "GET / ", 6) == 0 || strncmp(b,"get / ", 6) == 0){
+        strcpy(b, "GET /. ");
+    }
+
+    printf("\n%s\n", b); */
+    
+    // Error check arguments
+
+    if(argc != 3){
+        fprintf(stderr, "Error: The input should only be a port number. \n");
+        exit(1);
+    }
+    
+    sockFd = create_bind(argv[1]);
+    usesThreads = atoi(argv[2]);
+
+    // Start listening for connections, 100 is maximum number of connections
+    if(listen(sockFd, 100) < 0){
+        fprintf(stderr, "Listen error.\n");
+    }
+        
+    printf("The web server is now online!\n");
+    while(1){
+        int size =  sizeof(clientAddr);
+        
+        //Create and bind client socket and address and get client file descriptor
+        if((clientFd = accept(sockFd, (struct sockaddr *) &clientAddr, &size)) < 0){
+            printf("Error: Did not accept properly.%i: %s\n", errno, strerror(errno));
+            continue;
+        }
+
+        // If user requested threads
+        if(usesThreads == 1){
+            void* stack = malloc(16000);
+            pid_t pid = clone(&getRequest, (char*) stack + 16000, SIGCHLD | CLONE_FS | CLONE_SIGHAND | CLONE_VM, ((void *)&clientFd));
+        }else if(fork() == 0){
+            close(sockFd);
+    
+            getRequest(((void *)&clientFd));    
+            close(clientFd);
+            exit(0);
+        }
+        
+        close(clientFd);    
+    }
 }
