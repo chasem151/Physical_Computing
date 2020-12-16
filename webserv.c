@@ -261,6 +261,52 @@ int getRequest(void* request){ // , int socket_fd
     // Handle the request based on the extension of the file
 
     if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
+        // to handle cgi input args
+        int flag_args = 0;
+        char cgi_args_raw[1024];
+        char *token;
+        token = strtok(request,"?");
+        strcpy(request,token);
+        token = strtok(NULL, "");
+        if(token != NULL){
+            strcpy(cgi_args_raw,token);
+            flag_args = 1;
+        }
+        char cmd[400];
+        char readbuf[80];
+        sprintf(cmd, "chmod 755 %s && %s", request, request);
+        if (flag_args == 1) {
+            char tempbuf[80];
+            char *token1;
+            char *token2;
+            token1 = strtok(cgi_args_raw, "&");
+            while (token1 != NULL) {
+                strcpy(tempbuf, token1);
+                token2 = strrchr(tempbuf, '=');
+                strcat(cmd, " ");
+                strcat(cmd, &token2[1]);
+                token1 = strtok(NULL, "&");
+            }
+        }
+        FILE *pipe;
+            if( (pipe = popen(cmd, "r")) == NULL ) {
+                perror("popen error: ");
+                exit(1);
+            }
+            sprintf(output, "HTTP/ 1.1 200 OK\r\n");
+            write(client, output, strlen(output));
+
+            while(fgets(readbuf, 80, pipe)) {
+                write(client, readbuf, strlen(readbuf));
+            }
+
+            // Close pipe
+            if (pclose(pipe) < 0) {
+                perror("pclose error: ");
+                exit(1);
+            }
+    
+            /*
         int pipe1[2]; //add signal handlers
         pipe(pipe1);
         //fflush(stdout);
@@ -287,6 +333,7 @@ int getRequest(void* request){ // , int socket_fd
 
             close(pipe1[0]);
         }
+        */
     }else if(strcmp(fileType, ".jpg") == 0 || strcmp(fileType, ".jpeg") == 0 || strcmp(fileType, ".gif") == 0){
         // Figure out content type
         if(strcmp(fileType, ".gif") == 0)
