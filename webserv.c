@@ -355,7 +355,11 @@ int getRequest(void* request){ // , int socket_fd
             sprintf(output, "Content-Type: text/plain\r\n\r\nDirectory Listing: \n\n");
             write(client, output, strlen(output));
             // Write the file/folder names to client
+<<<<<<< HEAD
             while((de = readdir(folder)) != NULL){
+=======
+            while((dent = readdir(folder)) != NULL){
+>>>>>>> 5fa5198cd280ba28e373e0c55ad28c354d5065f6
                 sprintf(output, de->d_name);
                 // Ignore current and parent directory links
                 if(strcmp(output, ".") != 0 && strcmp(output, "..") != 0){
@@ -387,6 +391,7 @@ int getRequest(void* request){ // , int socket_fd
 	if ((listen_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
 		perror("Server-socket error");
 		exit(-1);
+<<<<<<< HEAD
 	}
 
 	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &approved, sizeof(int)) == -1){
@@ -394,6 +399,65 @@ int getRequest(void* request){ // , int socket_fd
 		exit(-1);
 	}
 
+	host_addr.sin_family = AF_INET; // any avail port
+	host_addr.sin_port = htons(portnum); // network bytes
+	host_addr.sin_addr.s_addr = htonl(INADDR_ANY); // fill w/host's IP
+
+	printf("Server-Using %s and port %d.\n", inet_ntoa(host_addr.sin_addr), portnum);
+	memset(&(host_addr.sin_zero), '\0', 8); // default constructor https://stackoverflow.com/questions/24666186/why-memset-sockaddr-in-to-0
+
+	if(bind(listen_fd, (struct sockaddr *)&host_addr, sizeof(host_addr)) < -1){
+		perror("Server-bind error");
+		exit(-1);
+	}
+
+    // 2 for testing purposes...break it!
+	if(listen(listen_fd, 2) == -1){
+		perror("Server-listen error");
+		exit(-1);
+	}
+
+	char http_buf[200]; // request
+	while(1){
+		client_size = sizeof(client_addr);
+		if((client_fd = accept(listen_fd, (struct sockaddr *) &client_addr, &client_size)) == -1){
+			perror("Server-accept() error");
+			continue;
+		}
+		if(fork() == 0){
+			close(listen_fd); // child doesn't need
+            //correct_remote_address(client_fd); // recv() another client http GET buf
+			getRequest((void *)&client_fd); // right here guys?? idk
+			close(client_fd);
+			exit(0);
+		}
+		close(client_fd); // parent doesn't need
+=======
+	}
+
+	if (setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &approved, sizeof(int)) == -1){
+		perror("Server-setsockopt error");
+		exit(-1);
+>>>>>>> 5fa5198cd280ba28e373e0c55ad28c354d5065f6
+	}
+}
+// pipe/send file is done with histogram.cgi */
+
+
+int main(int argc, char*argv[]){
+    int sockFd, clientFd;
+    struct sockaddr_in clientAddr;
+    int usesThreads = 0;
+
+    /* char *s = extension("my-histogram.cgi");
+    printf("\n %s \n", s); */
+
+<<<<<<< HEAD
+    /* char *b = "GET /mnt/c/Users/kshin/Documents/GitHub/Physical-Computing";
+
+    dir_extension(b);
+
+=======
 	host_addr.sin_family = AF_INET; // any avail port
 	host_addr.sin_port = htons(portnum); // network bytes
 	host_addr.sin_addr.s_addr = htonl(INADDR_ANY); // fill w/host's IP
@@ -444,6 +508,7 @@ int main(int argc, char*argv[]){
 
     dir_extension(b);
 
+>>>>>>> 5fa5198cd280ba28e373e0c55ad28c354d5065f6
     printf("\n%s\n", b);
 
     if(strncmp(b, "GET / ", 6) == 0 || strncmp(b,"get / ", 6) == 0){

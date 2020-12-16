@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/usr/bin/perl --
+=======
+#!/usr/bin/perl
+>>>>>>> 5fa5198cd280ba28e373e0c55ad28c354d5065f6
 
 # Run gnuplot and read input from filehandler
 open my $PROGRAM, '|-', 'gnuplot'
