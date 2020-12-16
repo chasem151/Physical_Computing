@@ -165,6 +165,7 @@ int getRequest(void* request){ // , int socket_fd
     char filePath[256];
     //char fileType[20];
     char input[256];
+    //char *inputs[2];
     char output[4096];
     int re;
     char ptr[1024];
@@ -213,21 +214,117 @@ int getRequest(void* request){ // , int socket_fd
     }
     filePath[j] = 0;
 
-    //char *inputs;
+    char **inputs;
+    //char *inputs[2];
     //printf("fpath before %s\n", filePath);
     //*filePath = strtok(filePath, "?");
     if(strchr(filePath, '?')){
-        printf("here");
+        //printf("here");
         char *fPath = strtok(filePath, "?");
         strcpy(filePath, fPath);
         fPath = strtok(NULL, "?");
+        int counter = 0;
+        //char *inputs[2];
+        /* fPath = strtok(NULL, "&");
+        while (fPath != NULL) {
+            //inputs[i++] = fPath;
+            printf("\ninputs: %s\n", fPath);
+            fPath = strtok(NULL, "&");
+        } */
         strcpy(input, fPath);
+        int count = 1;
+
+        //printf("here");
+        for(int i = 0; i < strlen(input); i++){
+            if(input[i] == '&') {
+                count++;
+            }
+        }
+        inputs = (char *)malloc(count*sizeof(char*));
+        char *value = strtok(input, "&");
+        int index = 0;
+        while(value != NULL) {
+            inputs[index] = malloc(strlen(value)*sizeof(char));
+            //printf("value: %s\n index: %d\n", value, index);
+            strcpy(inputs[index], value);
+            //printf("input at index %d: %s\n", index, inputs[index]);
+            value = strtok(NULL, "&");
+            index++;
+            //strcpy(inputs[index], value);
+        }
+        //test.cgi?hello&goodbye&hi
+        //test.cgi
+        //[hello, goobye,hi]
+
+        /* for(int i = 0; i < count; i++){
+            inputs[i] = malloc(strlen(value)*sizeof(char));
+            printf("value1: %s\n", value);
+            printf("copying");
+            strcpy(inputs[i], value);
+            value = strtok(NULL, "&");
+            //strcpy(inputs[i+1], value);
+            printf("value2: %s\n", value);
+            if(value == NULL){
+                printf("here");
+                break;
+            }
+        } */
+
+        //printf("\nsize: %d", sizeof(inputs));
+        /* printf("\nindex: %d %s", 2, inputs[2]);
+        printf("\nindex: %d %s", 1, inputs[1]);
+        printf("\nindex: %d", 2); */
+
+        //int j = 0;
+        //for(j= 0; j <= 2; j++){
+            //printf("\nindex: %d %s", j, inputs[j]);
+            //printf("\ninput: %s", inputs[j]);
+        //}
+        
+        //int index = 0;
+        //char *value = strtok(input, "&");
+        //strcpy(inputs[index], value);
+        //while(value != NULL){
+            //strcpy(inputs[index], value);
+            //index++;
+            //value = strtok(NULL, "&");
+        //}
+        //printf("count: %d", count);
         //printf("\nfpath: %s\n", fPath);
     }
+    //for(int i = 0; i <2; i++){
+        //printf("%s", inputs[i]);
+    //}
     //printf("\nfpath: %s\n", input);
     //printf("fpath after %s\n", filePath);
 
     char *fileType = extension(filePath);
+
+   /*  int count = 0;
+
+    printf("here");
+    for(int i = 0; i < strlen(input); i++){
+        if(input[i] == '&') {
+            count++;
+        }
+    }
+
+    printf("count: %d", count); */
+
+    /* char *inList[count];
+
+    int index = 0;
+    char *value = strtok(input, "&");
+    while(value != NULL){
+        strcpy(inList[i], value);
+        i++;
+        value = strtok(NULL, "&");
+    }
+
+    for(int j = 0; j < count; j++) {
+        printf(inList[j]);
+    }
+ */
     //printf("\nftype: %s\n", fType);
 
     /* // Get file extension
