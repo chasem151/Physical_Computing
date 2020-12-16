@@ -31,8 +31,8 @@
 
 // see setsockopt(), getsockopt() to set or know the rx buffer's size
 
-static int const  ERR_NOTFOUND = 404;
-static int const  ERR_NOTIMPL = 501;
+//static int const  ERR_NOTFOUND = 404;
+//static int const  ERR_NOTIMPL = 501;
 
 int create_bind(char *num){
     int portNum, sockNum;
@@ -61,10 +61,10 @@ int create_bind(char *num){
     return sockNum;
 }
 
-void correct_remote_address(FILE *fp){ // see man for: recv()
+/* void correct_remote_address(FILE *fp){ // see man for: recv()
     char buf[BUFSIZ]; // max stream (MACRO-BUFSIZ-stdio.h)
-    while(fgets(buf,BUFSIZ,fp)!= NULL && strcmp(buf,"\r\n" !=0));
-}
+    while(fgets(buf,BUFSIZ,fp)!= NULL && strcmp(buf,"\r\n") !=0);
+} */
 
 int wont_stat(char *ptr){ // HTML 404: "Not Found"
     struct stat info;
@@ -118,19 +118,21 @@ void http_error(int errorno, int client, char *ftype){ // could be: int socket_f
     case 404: // see wont_stat() ^^
         sprintf(buf, "HTTP/ 1.1  404 NOT FOUND\r\n");   
         write(client, buf, strlen(buf));
-        if(strcmp(ftype, "html") || strcmp(ftype, "txt")) {
+        memmove(ftype, ftype+1, strlen(ftype));
+        //printf("\n%s\n", ftype);
+        if(!strcmp(ftype, "html") || !strcmp(ftype, "txt")) {
+            //printf("\nhere %s\n", ftype);
             sprintf(buf, "Content-Type: text/%s\r\n\r\n", ftype);
         }
-        if(strcmp(ftype, "jpeg") || strcmp(ftype, "jpg") || strcmp(ftype, "gif")) {
-            sprintf(buf, "Content-Type: image/%s\r\n\r\n", ftype);
+        if(!strcmp(ftype, "jpeg") || !strcmp(ftype, "jpg") || !strcmp(ftype, "gif")) {
+            //printf("\nhere2 %s\n", ftype);
+            sprintf(buf, "Content-Type: text/%s\r\n\r\n", ftype);
         }
         //sprintf(buf, "Content-Type: text/html\r\n\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "<HTML><head>\n<TITLE> 404 Not Found</title></head>\r\n");
+        sprintf(buf, "404 Not Found\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "<BODY>The specified URL could not be located");
-        write(client, buf, strlen(buf));
-        sprintf(buf, " on the server. \r\n</BODY></HTML>\r\n");
+        sprintf(buf, "The specified URL could not be found.");
         write(client, buf, strlen(buf));
         break;
     // Not Implemented
@@ -139,11 +141,11 @@ void http_error(int errorno, int client, char *ftype){ // could be: int socket_f
         write(client, buf, strlen(buf));
         sprintf(buf, "Content-Type: text/html\r\n\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "<HTML><HEAD>\n<TITLE> 501 Not Implemented</TITLE></HEAD>\r\n");
+        sprintf(buf, "501 Not Implemented\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "<BODY>The server does not support the functionality");
+        sprintf(buf, "The server does not support the functionality");
         write(client, buf, strlen(buf));
-        sprintf(buf, " required to fullfill the request. \r\n</BODY></HTML>\r\n");
+        sprintf(buf, " required to fullfill the request.\r\n");
         write(client, buf, strlen(buf));
         break;
 
@@ -228,7 +230,7 @@ int getRequest(void* request){ // , int socket_fd
         j++;
     }
 
-    printf("\nfiletype: %s\n", fileType); */
+    //printf("\nfiletype: %s\n", fileType);  */
 
     // Check if file exists
     if((file = fopen(filePath, "r")) == NULL){
@@ -315,6 +317,7 @@ int getRequest(void* request){ // , int socket_fd
         }
     
     }else if(strcmp(fileType, ".html") == 0 || (strcmp(fileType, ".txt") == 0)) {
+        //printf("here3");
         // Decide content type
         if((strcmp(fileType, ".txt") == 0))
             sprintf(output, "Content-Type: text/plain\r\n\r\n");
@@ -323,11 +326,22 @@ int getRequest(void* request){ // , int socket_fd
         // Write content type to client
         write(client, output, strlen(output));
 
+        
+        //sprintf(output, "Output of file:\r\n\r\n");
+        //write(client, output, strlen(output));
+        
         //Write the contents of the file to client
-        fgets(output, sizeof(output), file);
+        //printf("here");
+        //fgets(output, sizeof(output), file);
+        //printf("\n%s\n", output);
         while(!feof(file)){
-            send(client, output, strlen(output), 0);
             fgets(output, sizeof(output), file);
+            //printf("here2");
+            //printf("\n%s\n", output);
+            send(client, output, strlen(output), 0);
+            //sprintf(output, output);
+            //write(client,output,strlen(output));
+            //fgets(output, sizeof(output), file);
         }
     }else{ // directory listing request
     
@@ -397,7 +411,7 @@ int getRequest(void* request){ // , int socket_fd
 // pipe/send file is done with histogram.cgi */
 
 
-int main(int argc, char*argv[]){
+/* int main(int argc, char*argv[]){
     int sockFd, clientFd;
     struct sockaddr_in clientAddr;
     int usesThreads = 0;
@@ -405,7 +419,7 @@ int main(int argc, char*argv[]){
     /* char *s = extension("my-histogram.cgi");
     printf("\n %s \n", s); */
 
-	host_addr.sin_family = AF_INET; // any avail port
+	/* host_addr.sin_family = AF_INET; // any avail port
 	host_addr.sin_port = htons(portnum); // network bytes
 	host_addr.sin_addr.s_addr = htonl(INADDR_ANY); // fill w/host's IP
 
@@ -415,9 +429,9 @@ int main(int argc, char*argv[]){
 	if(bind(listen_fd, (struct sockaddr *)&host_addr, sizeof(host_addr)) < -1){
 		perror("Server-bind error");
 		exit(-1);
-	}
+	} */
 
-    // 2 for testing purposes...break it!
+    /*// 2 for testing purposes...break it!
 	if(listen(listen_fd, 2) == -1){
 		perror("Server-listen error");
 		exit(-1);
@@ -439,7 +453,7 @@ int main(int argc, char*argv[]){
 		}
 		close(client_fd); // parent doesn't need
 	}
-}
+} */
 // pipe/send file is done with histogram.cgi */
 
 
