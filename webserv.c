@@ -362,8 +362,9 @@ int getRequest(void* request){ // , int socket_fd
 
     
     // Output success message
-    sprintf(output, "HTTP/1.1 200 OK\r\n");
+    sprintf(output, "HTTP/1.1 200 OK\r\nContent-type: text/plain\r\n");
     write(client, output, strlen(output));
+    //printf("here2");
 
     /* // Get file extension
     j = strlen(filePath) - 1;
@@ -395,6 +396,8 @@ int getRequest(void* request){ // , int socket_fd
         }
         char cmd[400];
         char readbuf[80];
+
+    //printf("filetype: %s", fileType);
     if(strcmp(fileType, ".cgi") == 0){ // do we need to fflush() this?? before dup2
             /*
         int pipe1[2]; //add signal handlers
@@ -402,49 +405,63 @@ int getRequest(void* request){ // , int socket_fd
         //fflush(stdout);
         */
         // Create new process to run CGI and get results through a pipe
+        //printf("here2");
         int pid = fork();
         if(pid == 0){
+           // printf("here2");
             //dup2(pipe1[1], 1);
             //close(pipe1[0]);
             // Set proper permissions
         //int parameter = strtol("0755", 0, 8);
           //  chmod(filePath, parameter);
         //sprintf(cmd, "chmod 755 %s && %s", request, request);
-        if (flag_args == 1) {
-            char tempbuf[80];
-            char *token1;
-            char *token2;
-            token1 = strtok(cgi_args_raw, "&");
-            while (token1 != NULL) {
-                strcpy(tempbuf, token1);
-                token2 = strrchr(tempbuf, '=');
-                strcat(cmd, " ");
-                strcat(cmd, &token2[1]);
-                token1 = strtok(NULL, "&");
-            }
-        }
-        FILE *pipe;
-            if( (pipe = popen(cmd, "r")) == NULL ) {
-                perror("popen error: ");
-                exit(1);
-            }
-            //sprintf(output, "HTTP/ 1.1 200 OK\r\n");
-            //write(client, output, strlen(output));
-
-            while(fgets(readbuf, 80, pipe)) {
-                write(client, readbuf, strlen(readbuf));
+            if (flag_args == 1) {
+                char tempbuf[80];
+                char *token1;
+                char *token2;
+                token1 = strtok(cgi_args_raw, "&");
+                while (token1 != NULL) {
+                    strcpy(tempbuf, token1);
+                    token2 = strrchr(tempbuf, '=');
+                    strcat(cmd, " ");
+                    strcat(cmd, &token2[1]);
+                    token1 = strtok(NULL, "&");
+                }
             }
 
-            // Close pipe
-            if (pclose(pipe) < 0) {
-                perror("pclose error: ");
-                exit(1);
-            }
-            int param = strtol("0755", 0, 8);
-            chmod(filePath, param);
 
-            execl(filePath, filePath, NULL); 
-            exit(0);
+
+            FILE *pipe;
+                if( (pipe = popen(cmd, "r")) == NULL ) {  //use fork and exec instead of popen (inheriting from shell instead of webserver)
+                    perror("popen error: ");
+                    exit(1);
+                }
+
+                //fork a process 
+                //check if fork = 0
+                //dup2 in child to set stdout to be client socket descriptor
+                //and exec command
+                //exec test.cgi
+
+                //sprintf(output, "HTTP/ 1.1 200 OK\r\n");
+                //write(client, output, strlen(output));
+
+                //not necessary
+                while(fgets(readbuf, 80, pipe)) {
+                    write(client, readbuf, strlen(readbuf));
+                }
+
+                // Close pipe
+                if (pclose(pipe) < 0) {
+                    perror("pclose error: ");
+                    exit(1);
+                }
+                int param = strtol("0755", 0, 8);
+                chmod(filePath, param);
+
+                //printf("here2");
+                execl(filePath, filePath, NULL); 
+                exit(0);
         
         }else{ // figure out how to handle python scripts
             //close(pipe1[1]);
@@ -452,6 +469,7 @@ int getRequest(void* request){ // , int socket_fd
             waitpid(pid, NULL, 0);
 
             //Write result to client    
+            printf("here1");
             char buf;
             while(read (pipe,&buf, sizeof(buf)) > 0){
                 write(client, &buf, 1);
