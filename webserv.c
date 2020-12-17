@@ -362,7 +362,7 @@ int getRequest(void* request){ // , int socket_fd
 
     
     // Output success message
-    sprintf(output, "HTTP/1.1 200 OK\r\nContent-type: text/plain\r\n");
+    sprintf(output, "HTTP/1.1 200 OK\r\n");
     write(client, output, strlen(output));
     //printf("here2");
 
@@ -406,8 +406,15 @@ int getRequest(void* request){ // , int socket_fd
         */
         // Create new process to run CGI and get results through a pipe
         //printf("here2");
+        //int pipe1[2];
+        //pipe(pipe1);
         int pid = fork();
         if(pid == 0){
+
+            //dup2(client, 1);
+            //close(pip)
+
+            
            // printf("here2");
             //dup2(pipe1[1], 1);
             //close(pipe1[0]);
@@ -429,6 +436,12 @@ int getRequest(void* request){ // , int socket_fd
                 }
             }
 
+            //fork a process 
+                //check if fork = 0
+                //dup2 in child to set stdout to be client socket descriptor
+                //and exec command
+                //exec test.cgi
+
 
 
             FILE *pipe;
@@ -437,19 +450,15 @@ int getRequest(void* request){ // , int socket_fd
                     exit(1);
                 }
 
-                //fork a process 
-                //check if fork = 0
-                //dup2 in child to set stdout to be client socket descriptor
-                //and exec command
-                //exec test.cgi
+                
 
                 //sprintf(output, "HTTP/ 1.1 200 OK\r\n");
                 //write(client, output, strlen(output));
 
                 //not necessary
-                while(fgets(readbuf, 80, pipe)) {
+                /* while(fgets(readbuf, 80, pipe)) {
                     write(client, readbuf, strlen(readbuf));
-                }
+                } */
 
                 // Close pipe
                 if (pclose(pipe) < 0) {
