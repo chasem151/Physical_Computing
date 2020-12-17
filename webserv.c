@@ -296,7 +296,7 @@ int getRequest(void* request){ // , int socket_fd
         //printf("%s", inputs[i]);
     //}
     //printf("\nfpath: %s\n", input);
-    //printf("fpath after %s\n", filePath);
+    //printf("filepath after %s\n", filePath);
 
     char *fileType = extension(filePath);
 
@@ -362,7 +362,7 @@ int getRequest(void* request){ // , int socket_fd
 
     
     // Output success message
-    sprintf(output, "HTTP/ 1.1 200 OK\r\n");
+    sprintf(output, "HTTP/1.1 200 OK\r\n");
     write(client, output, strlen(output));
 
     /* // Get file extension
