@@ -36,7 +36,7 @@ int main (int argc, char *argv[]){
 	        exit(1);
 	    }
 		
-		pclose(rx_pipe);
+		//pclose(rx_pipe);
 	}
 
 	return 0;

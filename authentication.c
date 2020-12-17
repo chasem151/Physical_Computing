@@ -5,34 +5,34 @@
 
 #define SIZE 20
 
-struct hashinfo {
+struct DataItem {
    int data;   
    int key;
 };
 
-struct hashinfo* data[SIZE]; 
-struct hashinfo* temp;
-struct hashinfo* item;
+struct DataItem* hashArray[SIZE]; 
+struct DataItem* dummyItem;
+struct DataItem* item;
 
 int hashCode(int key) {
    return key % SIZE;
 }
 
-struct hashinfo *search(int key) {
+struct DataItem *search(int key) {
    //get the hash 
-   int index = hashCode(key);  
+   int hashIndex = hashCode(key);  
 	
    //move in array until an empty 
-   while(data[index] != NULL) {
+   while(hashArray[hashIndex] != NULL) {
 	
-      if(data[index]->key == key)
-         return data[index]; 
+      if(hashArray[hashIndex]->key == key)
+         return hashArray[hashIndex]; 
 			
       //go to next cell
-      ++index;
+      ++hashIndex;
 		
       //wrap around the table
-      index %= SIZE;
+      hashIndex %= SIZE;
    }        
 	
    return NULL;        
@@ -40,47 +40,47 @@ struct hashinfo *search(int key) {
 
 void insert(int key,int data) {
 
-   struct hashinfo *item = (struct hashinfo*) malloc(sizeof(struct hashinfo));
+   struct DataItem *item = (struct DataItem*) malloc(sizeof(struct DataItem));
    item->data = data;  
    item->key = key;
 
    //get the hash 
-   int index = hashCode(key);
+   int hashIndex = hashCode(key);
 
    //move in array until an empty or deleted cell
-   while(data[index] != NULL && data[index]->key != -1) {
+   while(hashArray[hashIndex] != NULL && hashArray[hashIndex]->key != -1) {
       //go to next cell
-      ++index;
+      ++hashIndex;
 		
       //wrap around the table
-      index %= SIZE;
+      hashIndex %= SIZE;
    }
 	
-   data[index] = item;
+   hashArray[hashIndex] = item;
 }
 
-struct hashinfo* delete(struct hashinfo* item) {
+struct DataItem* delete(struct DataItem* item) {
    int key = item->key;
 
    //get the hash 
-   int index = hashCode(key);
+   int hashIndex = hashCode(key);
 
    //move in array until an empty
-   while(data[index] != NULL) {
+   while(hashArray[hashIndex] != NULL) {
 	
-      if(data[index]->key == key) {
-         struct hashinfo* temp = data[index]; 
+      if(hashArray[hashIndex]->key == key) {
+         struct DataItem* temp = hashArray[hashIndex]; 
 			
          //assign a dummy item at deleted position
-         data[index] = temp; 
+         hashArray[hashIndex] = dummyItem; 
          return temp;
       }
 		
       //go to next cell
-      ++index;
+      ++hashIndex;
 		
       //wrap around the table
-      index %= SIZE;
+      hashIndex %= SIZE;
    }      
 	
    return NULL;        
@@ -91,8 +91,8 @@ void display() {
 	
    for(i = 0; i<SIZE; i++) {
 	
-      if(data[i] != NULL)
-         printf(" (%d,%d)",data[i]->key,data[i]->data);
+      if(hashArray[i] != NULL)
+         printf(" (%d,%d)",hashArray[i]->key,hashArray[i]->data);
       else
          printf(" ~~ ");
    }
@@ -101,9 +101,9 @@ void display() {
 }
 
 int main() {
-   temp = (struct hashinfo*) malloc(sizeof(struct hashinfo));
-   temp->data = -1;  
-   temp->key = -1; 
+   dummyItem = (struct DataItem*) malloc(sizeof(struct DataItem));
+   dummyItem->data = -1;  
+   dummyItem->key = -1; 
 
    /*
     char * cmd;
@@ -116,26 +116,40 @@ int main() {
    insert(2, 1234);
    insert(42, 4321);
    
-    // 1. Construct fgets that takes STDIN numeric input to be built into 4-digit passwords...
-    // - possibly requires decoding char* argv with atoi()
-    // 2. search(index of that passkey)
-
-   display();
+   char name[5];
+   printf("Please enter a valid passkey: ");
+   fgets(name,5,stdin);
+   printf("Glad to meet you, %s\n",name); 
+   int x = atoi(name);
+   /*
+   insert(4, 25);
+   insert(12, 44);
+   insert(14, 32);
+   insert(17, 11);
+   insert(13, 78);
+   insert(37, 97);
+    */
+   //display();
    item = search(42);
 
-   if(item != NULL) {
+   if(item != NULL){
       printf("Element found: %d\n", item->data);
+      if(item->data == x){
+          printf("We have a match %d\n", x);
+          system("python3 gotwoangle.py");
+      }
    } else {
       printf("Element not found\n");
    }
 
    delete(item);
-   item = search(42); // to check if the data quickly disappears
-
-   if(item != NULL) { // passkey valid
+   item = search(42);
+    /*
+   if(item != NULL) {
       printf("Element found: %d\n", item->data);
-      system("python3 gotwoangle.py"); // open the floodgates!!! (opens door)
+      system("python3 gotwoangle.py");
    } else {
       printf("Element not found\n");
    }
+   */
 }
