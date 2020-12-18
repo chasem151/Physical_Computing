@@ -5,19 +5,14 @@
 
 int main (int argc, char *argv[]){
 	char *fp = argv[1];
-	char cmd[400];
+	char cmd[400] = "";
 	char rd_buf[80];
 	char wr_buf[85];
 
 	// For each pattern, run 'grep -e' on the file
-	for ( int i = 2; i < argc; i++) {
-		strcpy(cmd, "grep -o -e ");
-		strcat(cmd, argv[i]);
-		strcat(cmd, " ");
-		strcat(cmd, fp);
-		strcat(cmd, " | wc -w");
+	for ( int i = 2; i < argc; i++){ 
         // try snprintf() which may prevent overruns
-		//sprintf(cmd, "grep -o -e ", argv[i], " ", fp , " | wc -w");
+	sprintf(cmd, "grep -o -e ", argv[i], " ", fp , " | wc -w");
         // the grep per ftype: -o matches w/ nonzero pieces of lines, -e is patterns kept @ftype
         FILE *rx_pipe;
 	    if((rx_pipe = popen(cmd, "r")) == NULL){
@@ -36,7 +31,7 @@ int main (int argc, char *argv[]){
 	        exit(1);
 	    }
 		
-		//pclose(rx_pipe);
+		pclose(rx_pipe);
 	}
 
 	return 0;
