@@ -48,6 +48,7 @@ https://www.amazon.com/MakerDoIt-Micro-Arduino-Walking-Control/dp/B07C5PGD3Q/ref
 
 >Keypad via USB
 https://www.amazon.com/Numeric-Jelly-Comb-Portable-Computer/dp/B01NBSN2DC/ref=sr_1_1_sspa?dchild=1&keywords=keypad&qid=1608271220&sr=8-1-spons&psc=1&spLa=ZW5jcnlwdGVkUXVhbGlmaWVyPUEzRzhSVlgxVktKSTBTJmVuY3J5cHRlZElkPUEwNDU2NjI2VFpTRDk1UUVOMUEyJmVuY3J5cHRlZEFkSWQ9QTA1NzIwODcyWEtMNVZIR1dJNUU2JndpZGdldE5hbWU9c3BfYXRmJmFjdGlvbj1jbGlja1JlZGlyZWN0JmRvTm90TG9nQ2xpY2s9dHJ1ZQ==
+
 >RPI 3B+ Board
 https://www.amazon.com/CanaKit-Raspberry-Power-Supply-Listed/dp/B07BC6WH7V/ref=sr_1_4?dchild=1&keywords=raspberry+pi+3b%2B&qid=1608271307&sr=8-4
 
