@@ -29,6 +29,7 @@ Usage:
 
 `<python3 stream.py>`
 >Records infrared 640x480 resolution (5 megapixel) @24 FPS bound to port-number 8080 with GET requests... will later handle TensorFlow Lite object detection
+>https://randomnerdtutorials.com/video-streaming-with-raspberry-pi-camera/ for base-layer to this video server
 
 1. List Directories 
 
