@@ -15,7 +15,6 @@ say {$PROGRAM} "set style histogram gap 1.0";
 say {$PROGRAM} "set style data histograms";
 #say {$PROGRAM} "set xtics border scale 1,0 nomirror autojustify norangelimit";
 #say {$PROGRAM} "unset ytics";
-say {$PROGRAM} "set xdata(1,2)";
 say {$PROGRAM} "set title \"Frequency per file type in $ARGV[0]\"";
 say {$PROGRAM} "plot '-' using 2:xtic(1)";
 
@@ -33,6 +32,6 @@ print "<!DOCTYPE html>";
 print "<html><body>";
 print "<h1 style=\"color:red;\" align=\"center\"> CS410 Webserver </h1>";
 print "<br>";
-# print "<center><img src=\"notes.jpg\" align=\"middle\"></center>";
-print "<center><img src=\"./plotresult.jpeg\" align=\"middle\"></center>";
+print "<center><img src=\"pikachu.gif\" align=\"middle\"></center>";
+#print "<center><img src=\"./plotresult.jpeg\" align=\"middle\"></center>";
 print "</body></html>";
