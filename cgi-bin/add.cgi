@@ -3,12 +3,16 @@
 import cgi, cgitb
 cgitb.enable()
 
+#QUERY_STRING
+
+
 input_data = cgi.FieldStorage()
 
 print('Content-Type: text/html') # HTML is following
 print('')                         # Leave a blank line
 print('<h1>Addition Results</h1>')
-#print(input_data["num1"].value)
+#print(QUERY_STRING)
+print(cgi.FieldStorage())
 try:
     num1 = int(input_data["num1"].value)
     num2 = int(input_data["num2"].value)

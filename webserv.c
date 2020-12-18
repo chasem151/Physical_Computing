@@ -469,8 +469,8 @@ int getRequest(void* request){ // , int socket_fd
                     perror("pclose error: ");
                     exit(1);
                 } */
-                int param = strtol("0755", 0, 8);
-                chmod(filePath, param);
+                //int param = strtol("0755", 0, 8);
+                //chmod(filePath, param);
 
                 //printf("here2");
                 execl(filePath, filePath, NULL); 
