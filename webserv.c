@@ -116,7 +116,7 @@ void http_error(int errornum, int client, char *ftype){ // could be: int socket_
     switch(errornum){
     // Not Found
     case 404: // see wont_stat() ^^
-        sprintf(buf, "HTTP/ 1.1  404 NOT FOUND\r\n");   
+        sprintf(buf, "HTTP/1.1  404 NOT FOUND\r\n");   
         write(client, buf, strlen(buf));
         memmove(ftype, ftype+1, strlen(ftype));
         //printf("\n%s\n", ftype);
@@ -130,14 +130,14 @@ void http_error(int errornum, int client, char *ftype){ // could be: int socket_
         }
         //sprintf(buf, "Content-Type: text/html\r\n\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "404 Not Found\r\n");
+        sprintf(buf, "404 Not Found\r\n\r\n");
         write(client, buf, strlen(buf));
         sprintf(buf, "The specified URL could not be found.");
         write(client, buf, strlen(buf));
         break;
     // Not Implemented
     case 501:
-        sprintf(buf, "HTTP/ 1.1 501 NOT IMPLEMENTED\r\n");
+        sprintf(buf, "HTTP/1.1 501 NOT IMPLEMENTED\r\n");
         write(client, buf, strlen(buf));
         sprintf(buf, "Content-Type: text/html\r\n\r\n");
         write(client, buf, strlen(buf));
@@ -406,13 +406,13 @@ int getRequest(void* request){ // , int socket_fd
         */
         // Create new process to run CGI and get results through a pipe
         //printf("here2");
-        //int pipe1[2];
-        //pipe(pipe1);
+        int pipe1[2];
+        pipe(pipe1);
         int pid = fork();
         if(pid == 0){
 
-            //dup2(client, 1);
-            //close(pip)
+            dup2(client, 1);
+            close(pipe1[0]);
 
             
            // printf("here2");
@@ -422,7 +422,7 @@ int getRequest(void* request){ // , int socket_fd
         //int parameter = strtol("0755", 0, 8);
           //  chmod(filePath, parameter);
         //sprintf(cmd, "chmod 755 %s && %s", request, request);
-            if (flag_args == 1) {
+            /* if (flag_args == 1) {
                 char tempbuf[80];
                 char *token1;
                 char *token2;
@@ -434,7 +434,7 @@ int getRequest(void* request){ // , int socket_fd
                     strcat(cmd, &token2[1]);
                     token1 = strtok(NULL, "&");
                 }
-            }
+            } */
 
             //fork a process 
                 //check if fork = 0
@@ -444,11 +444,11 @@ int getRequest(void* request){ // , int socket_fd
 
 
 
-            FILE *pipe;
+           /*  FILE *pipe;
                 if( (pipe = popen(cmd, "r")) == NULL ) {  //use fork and exec instead of popen (inheriting from shell instead of webserver)
                     perror("popen error: ");
                     exit(1);
-                }
+                } */
 
                 
 
@@ -461,10 +461,10 @@ int getRequest(void* request){ // , int socket_fd
                 } */
 
                 // Close pipe
-                if (pclose(pipe) < 0) {
+                /* if (pclose(pipe) < 0) {
                     perror("pclose error: ");
                     exit(1);
-                }
+                } */
                 int param = strtol("0755", 0, 8);
                 chmod(filePath, param);
 
@@ -473,18 +473,18 @@ int getRequest(void* request){ // , int socket_fd
                 exit(0);
         
         }else{ // figure out how to handle python scripts
-            //close(pipe1[1]);
-            pclose(pipe);
+            close(pipe1[1]);
+            //pclose(pipe);
             waitpid(pid, NULL, 0);
 
             //Write result to client    
-            printf("here1");
+            //printf("here1");
             char buf;
-            while(read (pipe,&buf, sizeof(buf)) > 0){
+            while(read (pipe1[0],&buf, sizeof(buf)) > 0){
                 write(client, &buf, 1);
             }
 
-            //close(pipe1[0]);
+            close(pipe1[0]);
         }
         
     }else if(strcmp(fileType, ".jpg") == 0 || strcmp(fileType, ".jpeg") == 0 || strcmp(fileType, ".gif") == 0){
