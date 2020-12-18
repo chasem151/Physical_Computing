@@ -130,9 +130,11 @@ void http_error(int errornum, int client, char *ftype){ // could be: int socket_
         }
         //sprintf(buf, "Content-Type: text/html\r\n\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "404 Not Found\r\n\r\n");
+        sprintf(buf, "<HTML><head>\n<TITLE> 404 Not Found</title></head>\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "The specified URL could not be found.");
+        sprintf(buf, "<BODY><h1>404 Error</h1>\r\n");
+        write(client, buf, strlen(buf));
+        sprintf(buf, "<p>The specified URL could not be found.</p>\r\n</BODY></HTML>");
         write(client, buf, strlen(buf));
         break;
     // Not Implemented
@@ -141,11 +143,13 @@ void http_error(int errornum, int client, char *ftype){ // could be: int socket_
         write(client, buf, strlen(buf));
         sprintf(buf, "Content-Type: text/html\r\n\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "501 Not Implemented\r\n");
+        sprintf(buf, "<HTML><head>\n<TITLE> 501 Not Implemented</title></head>\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, "The server does not support the functionality");
+        sprintf(buf, "<BODY><h1>501 Error</h1>\r\n");
         write(client, buf, strlen(buf));
-        sprintf(buf, " required to fullfill the request.\r\n");
+        sprintf(buf, "<p>The server does not support the functionality");
+        write(client, buf, strlen(buf));
+        sprintf(buf, " required to fullfill the request.</p>\r\n</BODY></HTML>");
         write(client, buf, strlen(buf));
         break;
 

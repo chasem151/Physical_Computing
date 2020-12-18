@@ -1,4 +1,4 @@
-//#!/usr/bin/env python3
+//#!/usr/bin/c
 
 #include <stdio.h>
 #include <stdlib.h>
