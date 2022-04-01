@@ -1,4 +1,4 @@
-CS410 Assignment 3
+CS410 Assignment 3: Fall 2020
 
 Teammates -- UID:
 
