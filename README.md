@@ -2,9 +2,9 @@ CS410 Assignment 3
 
 Teammates -- UID:
 
-Chase Maivald -- U18719879,
-Kaelyn Shinbashi -- U6256519,
-Jared Yellen -- U62909356
+Chase Maivald,
+Kaelyn Shinbashi,
+Jared Yellen
 --
 
 Setup:
